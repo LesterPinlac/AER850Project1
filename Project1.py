@@ -120,3 +120,84 @@ y_pred_random = best_random_forest.predict(X_test)
 print("\nClassification Report for RandomForest (RandomizedSearchCV):")
 print(classification_report(y_test, y_pred_random))
 
+# 5. Combine two models using StackingClassifier
+estimators = [
+    ('svm', best_estimators['SVM']),
+    ('knn', best_estimators['KNN'])
+]
+
+stacking_clf = StackingClassifier(estimators=estimators, final_estimator=RandomForestClassifier(random_state=42))
+
+# Train the stacking model
+print("\nTraining Stacking Classifier...")
+stacking_clf.fit(X_train, y_train)
+
+# Evaluate the stacking model
+y_pred_stacking = stacking_clf.predict(X_test)
+print("\nClassification Report for Stacking Classifier:")
+print(classification_report(y_test, y_pred_stacking))
+
+# Use cross-validation for StackingClassifier
+cross_val_scores = cross_val_score(stacking_clf, X_train, y_train, cv=5)
+print("\nCross-Validation Scores for Stacking Classifier:", cross_val_scores)
+print("Mean CV Score for Stacking Classifier:", cross_val_scores.mean())
+
+# Function to evaluate model performance
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    return accuracy, precision, f1
+
+# Evaluate each model
+model_performance = {}
+for model_name, model in best_estimators.items():
+    accuracy, precision, f1 = evaluate_model(model, X_test, y_test)
+    model_performance[model_name] = {'accuracy': accuracy, 'precision': precision, 'f1': f1}
+
+# Evaluate the stacking model
+accuracy_stacking, precision_stacking, f1_stacking = evaluate_model(stacking_clf, X_test, y_test)
+model_performance['Stacking'] = {'accuracy': accuracy_stacking, 'precision': precision_stacking, 'f1': f1_stacking}
+
+# Evaluate the RandomizedSearchCV RandomForest model
+accuracy_random, precision_random, f1_random = evaluate_model(best_random_forest, X_test, y_test)
+model_performance['RandomForest (RandomizedSearchCV)'] = {'accuracy': accuracy_random, 'precision': precision_random, 'f1': f1_random}
+
+# Compare the performance metrics
+print("\nModel Performance Comparison:")
+for model_name, metrics in model_performance.items():
+    print(f"\n{model_name}:")
+    print(f"Accuracy: {metrics['accuracy']:.2f}")
+    print(f"Precision: {metrics['precision']:.2f}")
+    print(f"F1 Score: {metrics['f1']:.2f}")
+
+# Create a confusion matrix for the stacking model
+y_pred_best = stacking_clf.predict(X_test)
+conf_matrix = confusion_matrix(y_test, y_pred_best)
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', cbar=False)
+plt.title('Confusion Matrix for Stacking Classifier')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
+
+# Save the best model to a file
+joblib.dump(stacking_clf, 'stacking_model.joblib')
+print("\nStacking model saved to stacking_model.joblib")
+
+# Load and use the model for predictions on new data
+loaded_model = joblib.load('stacking_model.joblib')
+new_data = [
+    [9.375, 3.0625, 1.51],
+    [6.995, 5.125, 0.3875],
+    [0, 3.0625, 1.93],
+    [9.4, 3, 1.8],
+    [9.4, 3, 1.3]
+]
+new_data_scaled = scaler.transform(new_data)
+predictions = loaded_model.predict(new_data_scaled)
+
+print("\nPredicted Maintenance Steps for New Data Points:")
+for i, prediction in enumerate(predictions):
+    print(f"Data Point {i+1}: {prediction}")
