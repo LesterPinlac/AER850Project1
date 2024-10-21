@@ -9,21 +9,22 @@ from sklearn.metrics import classification_report, accuracy_score, precision_sco
 import matplotlib.pyplot as plt
 import joblib
 
-# Read data from CSV file into a DataFrame
+# Step 1: Data Processing - Read data from CSV file into a DataFrame
 file_path = 'project_1_Data.csv'
 df = pd.read_csv(file_path)
 
-# 1. Perform Statistical Analysis
+# Step 2: Data Visualization - Perform Statistical Analysis
 print("Descriptive Statistics by Step:")
 grouped_stats = df.groupby('Step').describe()
 print(grouped_stats)
 
+# Step 2 (continued): Data Visualization - Correlation Analysis & Visualizations
 # Correlation matrix to understand relationships between features
 correlation_matrix = df.corr()
 print("\nCorrelation Matrix:")
 print(correlation_matrix)
 
-# 2. Visualization of Dataset Behaviour within each 'Step'
+# Visualization of Dataset Behaviour within each 'Step'
 plt.figure(figsize=(18, 12))
 # Boxplots for each feature by 'Step'
 for idx, column in enumerate(['X', 'Y', 'Z'], start=1):
@@ -46,10 +47,10 @@ sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
 plt.title('Heatmap of Feature Correlations')
 plt.show()
 
-# 3. Transform Step into Target Variable
+# Step 3: Correlation Analysis - Transform Step into Target Variable
 target_variable = 'Step'
 
-# Prepare the data for ML models
+# Step 4: Classification Model Development/Engineering - Prepare data and create models
 X = df.drop(columns=[target_variable])
 y = df[target_variable]
 
@@ -94,13 +95,13 @@ for model_name in models:
     best_estimators[model_name] = grid_search.best_estimator_
     print(f"Best parameters for {model_name}: {grid_search.best_params_}")
 
-# Evaluate the best models on the test set
+# Step 5: Model Performance Analysis - Evaluate the best models on the test set
 for model_name, model in best_estimators.items():
     y_pred = model.predict(X_test)
     print(f"\nClassification Report for {model_name}:")
     print(classification_report(y_test, y_pred))
 
-# 4. RandomizedSearchCV for RandomForestClassifier
+# Step 4 (continued): RandomizedSearchCV for RandomForestClassifier
 random_search_params = {
     'n_estimators': [50, 100, 200, 300, 500],
     'max_depth': [None, 10, 20, 30, 50],
@@ -120,7 +121,7 @@ y_pred_random = best_random_forest.predict(X_test)
 print("\nClassification Report for RandomForest (RandomizedSearchCV):")
 print(classification_report(y_test, y_pred_random))
 
-# 5. Combine two models using StackingClassifier
+# Step 6: Stacked Model Performance Analysis - Combine models using StackingClassifier
 estimators = [
     ('svm', best_estimators['SVM']),
     ('knn', best_estimators['KNN'])
@@ -164,7 +165,7 @@ model_performance['Stacking'] = {'accuracy': accuracy_stacking, 'precision': pre
 accuracy_random, precision_random, f1_random = evaluate_model(best_random_forest, X_test, y_test)
 model_performance['RandomForest (RandomizedSearchCV)'] = {'accuracy': accuracy_random, 'precision': precision_random, 'f1': f1_random}
 
-# Compare the performance metrics
+# Step 5 (continued): Compare the performance metrics
 print("\nModel Performance Comparison:")
 for model_name, metrics in model_performance.items():
     print(f"\n{model_name}:")
@@ -182,7 +183,7 @@ plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.show()
 
-# Save the best model to a file
+# Step 7: Model Evaluation - Save the selected model to a file
 joblib.dump(stacking_clf, 'stacking_model.joblib')
 print("\nStacking model saved to stacking_model.joblib")
 
